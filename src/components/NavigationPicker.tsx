@@ -78,7 +78,7 @@ export default function NavigationPicker({
         </div>
 
         <p className="border-t border-white/10 px-4 py-3 text-center text-[11px] text-white/35">
-          앱이 설치되어 있으면 해당 앱으로 연결됩니다
+          T map · 카카오맵 등 앱이 설치되어 있으면 해당 앱으로 연결됩니다
         </p>
       </div>
     </div>
