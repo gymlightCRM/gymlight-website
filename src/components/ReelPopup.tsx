@@ -9,6 +9,7 @@ import {
   POPUP_STORAGE_KEY,
   type PopupReel,
 } from "@/data/popup-reels";
+import { officialInstagram } from "@/data/social";
 
 const TRANSITION_MS = 450;
 
@@ -23,6 +24,14 @@ function dismissForToday() {
   const end = new Date();
   end.setHours(23, 59, 59, 999);
   localStorage.setItem(POPUP_STORAGE_KEY, String(end.getTime()));
+}
+
+function reelProfile(reel: PopupReel) {
+  const handle = reel.handle ?? officialInstagram.handle;
+  const profileUrl =
+    reel.link?.replace(/\/$/, "") ||
+    officialInstagram.url.replace(/\/$/, "");
+  return { handle, profileUrl };
 }
 
 export default function ReelPopup() {
@@ -107,18 +116,21 @@ export default function ReelPopup() {
     }
   }, [open, index, current?.type, current?.url]);
 
-  if (reels.length === 0 || !open) return null;
+  if (reels.length === 0 || !open || !current) return null;
+
+  const { handle, profileUrl } = reelProfile(current);
+  const postUrl = current.url;
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/88 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label="짐라이트 프로모션"
+      aria-label="짐라이트 Instagram Reels"
       onClick={close}
     >
       <div
-        className="relative w-full max-w-sm"
+        className="relative w-full max-w-[400px]"
         onClick={(e) => e.stopPropagation()}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
@@ -126,84 +138,162 @@ export default function ReelPopup() {
         <button
           type="button"
           onClick={close}
-          className="absolute -top-10 right-0 z-20 text-sm text-white/70 hover:text-white"
+          className="absolute -top-10 right-0 z-20 text-sm text-white/80 hover:text-white"
           aria-label="닫기"
         >
           닫기 ✕
         </button>
 
-        <div className="overflow-hidden rounded-2xl border border-white/15 bg-[#0a0a0a] shadow-2xl shadow-[#39FF14]/10">
+        <article className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl shadow-black/40">
+          <InstagramPostHeader handle={handle} profileUrl={profileUrl} />
+
           <div
-            className={`relative aspect-[9/16] max-h-[min(75vh,640px)] w-full transition-opacity duration-300 ${
+            className={`relative transition-opacity duration-300 ${
               animating ? "opacity-0" : "opacity-100"
             }`}
           >
             <ReelContent
+              key={`${current.id}-${index}`}
               reel={current}
               videoRef={videoRef}
               onVideoEnded={goNext}
             />
-          </div>
 
-          {reels.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={goPrev}
-                className="absolute top-1/2 left-2 z-10 -translate-y-1/2 rounded-full bg-black/70 p-2.5 text-lg text-white/90 backdrop-blur hover:bg-black"
-                aria-label="이전"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                onClick={goNext}
-                className="absolute top-1/2 right-2 z-10 -translate-y-1/2 rounded-full bg-black/70 p-2.5 text-lg text-white/90 backdrop-blur hover:bg-black"
-                aria-label="다음"
-              >
-                ›
-              </button>
-            </>
-          )}
-
-          {current.title && (
-            <div className="absolute right-0 bottom-14 left-0 bg-gradient-to-t from-black/90 to-transparent px-4 py-3">
-              <p className="text-sm font-semibold text-white">{current.title}</p>
-            </div>
-          )}
-
-          <div className="border-t border-white/10 px-4 py-3">
             {reels.length > 1 && (
-              <div className="mb-3 flex justify-center gap-1.5">
-                {reels.map((r, i) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => goTo(i)}
-                    className={`h-1 rounded-full transition-all ${
-                      i === index
-                        ? "w-5 bg-[#39FF14]"
-                        : "w-1 bg-white/30 hover:bg-white/50"
-                    }`}
-                    aria-label={`${i + 1}번째`}
-                  />
-                ))}
-              </div>
+              <>
+                <button
+                  type="button"
+                  onClick={goPrev}
+                  className="absolute top-1/2 left-2 z-10 -translate-y-1/2 rounded-full bg-black/55 p-2 text-lg leading-none text-white backdrop-blur-sm transition hover:bg-black/75"
+                  aria-label="이전 릴스"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={goNext}
+                  className="absolute top-1/2 right-2 z-10 -translate-y-1/2 rounded-full bg-black/55 p-2 text-lg leading-none text-white backdrop-blur-sm transition hover:bg-black/75"
+                  aria-label="다음 릴스"
+                >
+                  ›
+                </button>
+              </>
             )}
-
-            <label className="flex cursor-pointer items-center justify-center gap-2 text-xs text-white/50">
-              <input
-                type="checkbox"
-                checked={hideToday}
-                onChange={(e) => setHideToday(e.target.checked)}
-                className="accent-[#39FF14]"
-              />
-              오늘 하루 보지 않기
-            </label>
           </div>
-        </div>
+
+          <InstagramPostFooter postUrl={postUrl} title={current.title} />
+        </article>
+
+        {reels.length > 1 && (
+          <div className="mt-4 flex justify-center gap-1.5">
+            {reels.map((r, i) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => goTo(i)}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === index
+                    ? "w-6 bg-[#39FF14]"
+                    : "w-1.5 bg-white/35 hover:bg-white/55"
+                }`}
+                aria-label={`${i + 1}번째 릴스`}
+              />
+            ))}
+          </div>
+        )}
+
+        <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 text-xs text-white/55">
+          <input
+            type="checkbox"
+            checked={hideToday}
+            onChange={(e) => setHideToday(e.target.checked)}
+            className="accent-[#39FF14]"
+          />
+          오늘 하루 보지 않기
+        </label>
       </div>
     </div>
+  );
+}
+
+function InstagramPostHeader({
+  handle,
+  profileUrl,
+}: {
+  handle: string;
+  profileUrl: string;
+}) {
+  return (
+    <header className="flex items-center gap-3 border-b border-neutral-100 px-3.5 py-3">
+      <div className="relative shrink-0 rounded-full bg-gradient-to-tr from-[#feda75] via-[#fa7e1e] to-[#d62976] p-[2px]">
+        <div className="relative h-9 w-9 overflow-hidden rounded-full bg-black">
+          <Image
+            src="/logo.png"
+            alt="짐라이트"
+            fill
+            className="object-contain p-1"
+            sizes="36px"
+          />
+        </div>
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-semibold text-neutral-900">
+          짐라이트
+        </p>
+        <p className="truncate text-[11px] text-neutral-500">
+          GYMLIGHT · @{handle.replace(/^@/, "")}
+        </p>
+      </div>
+
+      <a
+        href={profileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 rounded-lg bg-[#0095f6] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0086dd]"
+      >
+        프로필 보기
+      </a>
+    </header>
+  );
+}
+
+function InstagramPostFooter({
+  postUrl,
+  title,
+}: {
+  postUrl: string;
+  title?: string;
+}) {
+  return (
+    <footer className="border-t border-neutral-100 px-3.5 py-3">
+      <a
+        href={postUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mb-2.5 block text-xs font-semibold text-[#0095f6] hover:underline"
+      >
+        Instagram에서 더 보기
+      </a>
+
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-4 text-neutral-900">
+          <InstagramIconHeart />
+          <InstagramIconComment />
+          <InstagramIconShare />
+        </div>
+        <InstagramIconBookmark />
+      </div>
+
+      <p className="text-xs font-semibold text-neutral-900">GYMLIGHT</p>
+      {title ? (
+        <p className="mt-0.5 line-clamp-2 text-xs text-neutral-600">{title}</p>
+      ) : (
+        <p className="mt-0.5 text-xs text-neutral-500">
+          짐라이트 공식 인스타그램에서 올라온 Reels입니다.
+        </p>
+      )}
+    </footer>
   );
 }
 
@@ -219,42 +309,50 @@ function ReelContent({
   const href = reel.link ?? reel.url;
 
   if (reel.type === "instagram") {
-    const embed = instagramEmbedUrl(reel.url);
+    const embed = instagramEmbedUrl(reel.url, { autoplay: true });
     if (!embed) {
       return (
-        <div className="absolute inset-0 flex items-center justify-center bg-black">
+        <div className="flex aspect-[9/16] items-center justify-center bg-neutral-100">
           <a
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-full bg-[#39FF14] px-6 py-3 text-sm font-bold text-black"
+            className="rounded-lg bg-[#0095f6] px-5 py-2.5 text-sm font-semibold text-white"
           >
             Instagram에서 보기
           </a>
         </div>
       );
     }
+
     return (
-      <iframe
-        src={embed}
-        title={reel.title ?? "Instagram Reel"}
-        className="absolute inset-0 h-full w-full border-0"
-        allow="autoplay; encrypted-media; picture-in-picture"
-      />
+      <div className="relative aspect-[9/16] w-full overflow-hidden bg-neutral-950">
+        <iframe
+          src={embed}
+          title={reel.title ?? "짐라이트 Instagram Reel"}
+          className="absolute left-0 w-full border-0"
+          style={{ height: "118%", top: "-9%" }}
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          allowFullScreen
+          loading="eager"
+        />
+      </div>
     );
   }
 
   if (reel.type === "video") {
     return (
-      <video
-        ref={videoRef}
-        src={reel.url}
-        className="absolute inset-0 h-full w-full object-cover"
-        playsInline
-        muted
-        autoPlay
-        onEnded={onVideoEnded}
-      />
+      <div className="relative aspect-[9/16] w-full overflow-hidden bg-black">
+        <video
+          ref={videoRef}
+          src={reel.url}
+          className="absolute inset-0 h-full w-full object-cover"
+          playsInline
+          muted
+          autoPlay
+          onEnded={onVideoEnded}
+        />
+      </div>
     );
   }
 
@@ -263,7 +361,7 @@ function ReelContent({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="absolute inset-0 block"
+      className="relative block aspect-[9/16] w-full overflow-hidden bg-neutral-100"
     >
       <Image
         src={reel.url}
@@ -274,5 +372,57 @@ function ReelContent({
         priority
       />
     </Link>
+  );
+}
+
+function InstagramIconHeart() {
+  return (
+    <svg aria-hidden width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M16.792 3.904A4.989 4.989 0 0 1 21.5 9.122c0 3.072-2.652 4.959-5.197 7.222-2.512 2.243-3.865 3.469-4.303 3.752-.477-.309-2.143-1.823-4.303-3.752C5.141 14.072 2.5 12.167 2.5 9.122a4.989 4.989 0 0 1 4.708-5.218 4.21 4.21 0 0 1 3.675 1.941c.84 1.175.98 1.763 1.12 1.763s.278-.588 1.11-1.763a4.21 4.21 0 0 1 3.679-1.938Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}
+
+function InstagramIconComment() {
+  return (
+    <svg aria-hidden width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M20.656 17.008a9.993 9.993 0 1 0-3.59 3.615L22 22Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function InstagramIconShare() {
+  return (
+    <svg aria-hidden width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M22 3 9.218 15.083M22 3l-7.19 19L9.218 15.083M22 3 2 9.917l7.218 5.166"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function InstagramIconBookmark() {
+  return (
+    <svg aria-hidden width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M19 21 12 16 5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

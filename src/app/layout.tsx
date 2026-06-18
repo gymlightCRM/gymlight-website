@@ -23,6 +23,18 @@ export const metadata: Metadata = {
     siteName: "GYMLIGHT",
     locale: "ko_KR",
     type: "website",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "짐라이트 GYMLIGHT",
+      },
+    ],
+  },
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
 };
 

@@ -15,6 +15,8 @@ export interface PopupReel {
   type: PopupReelType;
   url: string;
   title?: string;
+  /** 표시할 인스타 계정 (예: gymlight.kr) */
+  handle?: string;
   durationSec?: number;
   link?: string;
 }
@@ -54,7 +56,10 @@ export function getActivePopupReels(): PopupReel[] {
   return popupReels.filter((r) => r.url.trim().length > 0);
 }
 
-export function instagramEmbedUrl(postUrl: string): string | null {
+export function instagramEmbedUrl(
+  postUrl: string,
+  options?: { autoplay?: boolean },
+): string | null {
   try {
     const parsed = new URL(postUrl);
     if (!parsed.hostname.replace("www.", "").includes("instagram.com")) {
@@ -62,7 +67,13 @@ export function instagramEmbedUrl(postUrl: string): string | null {
     }
     const path = parsed.pathname.replace(/\/$/, "");
     if (/^\/(reel|p|tv)\/[\w-]+/.test(path)) {
-      return `https://www.instagram.com${path}/embed`;
+      const params = new URLSearchParams();
+      if (options?.autoplay !== false) {
+        params.set("autoplay", "1");
+        params.set("playsinline", "1");
+      }
+      const query = params.toString();
+      return `https://www.instagram.com${path}/embed/${query ? `?${query}` : ""}`;
     }
   } catch {
     return null;
