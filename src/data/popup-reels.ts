@@ -62,6 +62,16 @@ export function getActivePopupReels(): PopupReel[] {
   return popupReels.filter((r) => r.url.trim().length > 0);
 }
 
+/** Fisher–Yates 셔플 — 팝업 노출 순서 랜덤화 */
+export function shufflePopupReels(reels: PopupReel[]): PopupReel[] {
+  const copy = [...reels];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 export function instagramEmbedUrl(
   postUrl: string,
   options?: { autoplay?: boolean },

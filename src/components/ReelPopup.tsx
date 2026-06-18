@@ -7,11 +7,27 @@ import {
   getActivePopupReels,
   instagramEmbedUrl,
   POPUP_STORAGE_KEY,
+  shufflePopupReels,
   type PopupReel,
 } from "@/data/popup-reels";
 import { officialInstagram } from "@/data/social";
 
 const TRANSITION_MS = 450;
+
+/** 릴스 영상 영역 — 모바일에서 뷰포트를 넘지 않도록 높이 제한 */
+const REEL_MEDIA_CLASS =
+  "relative mx-auto aspect-[9/16] w-full max-h-[38dvh] overflow-hidden bg-black sm:max-h-none";
+
+async function playVideoPreferSound(el: HTMLVideoElement) {
+  el.muted = false;
+  try {
+    await el.play();
+    return;
+  } catch {
+    el.muted = true;
+    await el.play().catch(() => undefined);
+  }
+}
 
 function isDismissedToday(): boolean {
   if (typeof window === "undefined") return true;
@@ -35,7 +51,7 @@ function reelProfile(reel: PopupReel) {
 }
 
 export default function ReelPopup() {
-  const reels = getActivePopupReels();
+  const [reels, setReels] = useState<PopupReel[]>([]);
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -52,12 +68,15 @@ export default function ReelPopup() {
   }, [hideToday]);
 
   useEffect(() => {
-    if (reels.length === 0) return;
+    const active = getActivePopupReels();
+    if (active.length === 0) return;
     if (!isDismissedToday()) {
+      setReels(shufflePopupReels(active));
+      setIndex(0);
       const t = setTimeout(() => setOpen(true), 400);
       return () => clearTimeout(t);
     }
-  }, [reels.length]);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -112,16 +131,14 @@ export default function ReelPopup() {
   }, [open, index, current, goNext, paused, reels.length]);
 
   useEffect(() => {
-    const isVideoLike =
-      current?.type === "video" || current?.type === "instagram";
-    if (!open || !isVideoLike || !videoRef.current) return;
+    if (!open || current?.type !== "video" || !videoRef.current) return;
     const el = videoRef.current;
     if (paused) {
       el.pause();
     } else {
-      void el.play().catch(() => undefined);
+      void playVideoPreferSound(el);
     }
-  }, [open, index, current?.type, current?.url, current?.videoUrl, paused]);
+  }, [open, index, current?.type, current?.url, paused]);
 
   if (reels.length === 0 || !open || !current) return null;
 
@@ -130,26 +147,28 @@ export default function ReelPopup() {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/88 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto bg-black/88 p-3 pb-4 backdrop-blur-sm sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label="짐라이트 Instagram Reels"
       onClick={close}
     >
       <div
-        className="relative w-full max-w-[400px]"
+        className="relative my-auto flex w-full max-w-[400px] flex-col"
         onClick={(e) => e.stopPropagation()}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
-        <button
-          type="button"
-          onClick={close}
-          className="absolute -top-10 right-0 z-20 text-sm text-white/80 hover:text-white"
-          aria-label="닫기"
-        >
-          닫기 ✕
-        </button>
+        <div className="mb-2 flex shrink-0 items-center justify-end">
+          <button
+            type="button"
+            onClick={close}
+            className="rounded-full bg-black/50 px-3 py-1.5 text-sm text-white/90 backdrop-blur-sm hover:bg-black/70 hover:text-white sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none"
+            aria-label="닫기"
+          >
+            닫기 ✕
+          </button>
+        </div>
 
         <article className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl shadow-black/40">
           <InstagramPostHeader handle={handle} profileUrl={profileUrl} />
@@ -194,7 +213,7 @@ export default function ReelPopup() {
         </article>
 
         {reels.length > 1 && (
-          <div className="mt-4 flex justify-center gap-1.5">
+          <div className="mt-2 flex shrink-0 justify-center gap-1.5 sm:mt-4">
             {reels.map((r, i) => (
               <button
                 key={r.id}
@@ -211,7 +230,7 @@ export default function ReelPopup() {
           </div>
         )}
 
-        <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 text-xs text-white/55">
+        <label className="mt-2 flex shrink-0 cursor-pointer items-center justify-center gap-2 text-xs text-white/55 sm:mt-3">
           <input
             type="checkbox"
             checked={hideToday}
@@ -233,9 +252,9 @@ function InstagramPostHeader({
   profileUrl: string;
 }) {
   return (
-    <header className="flex items-center gap-3 border-b border-neutral-100 px-3.5 py-3">
+    <header className="flex items-center gap-2.5 border-b border-neutral-100 px-3 py-2 sm:gap-3 sm:px-3.5 sm:py-3">
       <div className="relative shrink-0 rounded-full bg-gradient-to-tr from-[#feda75] via-[#fa7e1e] to-[#d62976] p-[2px]">
-        <div className="relative h-9 w-9 overflow-hidden rounded-full bg-black">
+        <div className="relative h-8 w-8 overflow-hidden rounded-full bg-black sm:h-9 sm:w-9">
           <Image
             src="/logo.png"
             alt="짐라이트"
@@ -259,7 +278,7 @@ function InstagramPostHeader({
         href={profileUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="shrink-0 rounded-lg bg-[#0095f6] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0086dd]"
+        className="shrink-0 rounded-lg bg-[#0095f6] px-2 py-1 text-[10px] font-semibold text-white hover:bg-[#0086dd] sm:px-3 sm:py-1.5 sm:text-xs"
       >
         프로필 보기
       </a>
@@ -275,18 +294,18 @@ function InstagramPostFooter({
   title?: string;
 }) {
   return (
-    <footer className="border-t border-neutral-100 px-3.5 py-3">
+    <footer className="border-t border-neutral-100 px-3 py-2 sm:px-3.5 sm:py-3">
       <a
         href={postUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mb-2.5 block text-xs font-semibold text-[#0095f6] hover:underline"
+        className="mb-1.5 block text-xs font-semibold text-[#0095f6] hover:underline sm:mb-2.5"
       >
         Instagram에서 더 보기
       </a>
 
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-4 text-neutral-900">
+      <div className="mb-1.5 flex items-center justify-between sm:mb-2">
+        <div className="flex items-center gap-3 text-neutral-900 sm:gap-4">
           <InstagramIconHeart />
           <InstagramIconComment />
           <InstagramIconShare />
@@ -296,9 +315,11 @@ function InstagramPostFooter({
 
       <p className="text-xs font-semibold text-neutral-900">GYMLIGHT</p>
       {title ? (
-        <p className="mt-0.5 line-clamp-2 text-xs text-neutral-600">{title}</p>
+        <p className="mt-0.5 line-clamp-1 text-xs text-neutral-600 sm:line-clamp-2">
+          {title}
+        </p>
       ) : (
-        <p className="mt-0.5 text-xs text-neutral-500">
+        <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500 sm:line-clamp-2">
           짐라이트 공식 인스타그램에서 올라온 Reels입니다.
         </p>
       )}
@@ -336,13 +357,12 @@ function ReelContent({
 
   if (reel.type === "video") {
     return (
-      <div className="relative aspect-[9/16] w-full overflow-hidden bg-black">
+      <div className={REEL_MEDIA_CLASS}>
         <video
           ref={videoRef}
           src={reel.url}
           className="absolute inset-0 h-full w-full object-cover"
           playsInline
-          muted
           autoPlay
           onEnded={onVideoEnded}
         />
@@ -355,7 +375,7 @@ function ReelContent({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="relative block aspect-[9/16] w-full overflow-hidden bg-neutral-100"
+      className={`${REEL_MEDIA_CLASS} block bg-neutral-100`}
     >
       <Image
         src={reel.url}
@@ -386,7 +406,7 @@ function InstagramReelPlayer({
 }) {
   const [videoSrc, setVideoSrc] = useState<string | null>(reel.videoUrl ?? null);
   const [loading, setLoading] = useState(!reel.videoUrl);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
 
   useEffect(() => {
     if (reel.videoUrl) {
@@ -423,12 +443,23 @@ function InstagramReelPlayer({
   useEffect(() => {
     if (!active || !videoSrc || !videoRef.current) return;
     const el = videoRef.current;
-    el.muted = muted;
     if (paused) {
       el.pause();
-    } else {
-      void el.play().catch(() => undefined);
+      return;
     }
+    el.muted = muted;
+    void (async () => {
+      if (!muted) {
+        try {
+          await el.play();
+          return;
+        } catch {
+          setMuted(true);
+          el.muted = true;
+        }
+      }
+      await el.play().catch(() => undefined);
+    })();
   }, [active, videoSrc, muted, paused, videoRef]);
 
   useEffect(() => {
@@ -449,7 +480,7 @@ function InstagramReelPlayer({
 
   if (loading) {
     return (
-      <div className="flex aspect-[9/16] items-center justify-center bg-neutral-950">
+      <div className={`${REEL_MEDIA_CLASS} flex items-center justify-center bg-neutral-950`}>
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-[#39FF14]" />
       </div>
     );
@@ -457,7 +488,7 @@ function InstagramReelPlayer({
 
   if (videoSrc) {
     return (
-      <div className="relative aspect-[9/16] w-full overflow-hidden bg-black">
+      <div className={REEL_MEDIA_CLASS}>
         <video
           ref={videoRef}
           src={videoSrc}
@@ -483,7 +514,7 @@ function InstagramReelPlayer({
   const embed = instagramEmbedUrl(reel.url, { autoplay: true });
   if (!embed) {
     return (
-      <div className="flex aspect-[9/16] items-center justify-center bg-neutral-100">
+      <div className={`${REEL_MEDIA_CLASS} flex items-center justify-center bg-neutral-100`}>
         <a
           href={fallbackHref}
           target="_blank"
@@ -497,7 +528,7 @@ function InstagramReelPlayer({
   }
 
   return (
-    <div className="relative aspect-[9/16] w-full overflow-hidden bg-neutral-950">
+    <div className={`${REEL_MEDIA_CLASS} bg-neutral-950`}>
       <iframe
         src={embed}
         title={reel.title ?? "짐라이트 Instagram Reel"}

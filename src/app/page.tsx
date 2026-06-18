@@ -27,9 +27,9 @@ export default function HomePage() {
               Base in Seoul
             </p>
             <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">
-              <span className="text-white">YOUR LIGHT,</span>
+              <span className="text-white">BE THE LIGHT,</span>
               <br />
-              <span className="text-[#39FF14]">YOUR GYM.</span>
+              <span className="text-[#39FF14]">GYM LIGHT.</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-relaxed text-white/60 sm:text-lg">
               서울 6개 지점, 하나의 기준.

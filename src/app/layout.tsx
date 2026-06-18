@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://gymlight.co.kr"),
   openGraph: {
     title: "짐라이트 GYMLIGHT",
-    description: "YOUR LIGHT, YOUR GYM. Base in Seoul.",
+    description: "BE THE LIGHT, GYM LIGHT. Base in Seoul.",
     siteName: "GYMLIGHT",
     locale: "ko_KR",
     type: "website",

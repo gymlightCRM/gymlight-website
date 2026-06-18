@@ -152,3 +152,7 @@ export function naverPlaceUrl(placeId: string): string {
 export function naverDirectionsUrl(placeId: string): string {
   return `https://map.naver.com/p/entry/place/${placeId}?placePath=/route`;
 }
+
+export function naverReservationUrl(placeId: string): string {
+  return `https://map.naver.com/p/entry/place/${placeId}?placePath=/ticket`;
+}

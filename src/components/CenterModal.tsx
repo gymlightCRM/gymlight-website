@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import {
   naverDirectionsUrl,
   naverPlaceUrl,
+  naverReservationUrl,
   type Center,
 } from "@/data/centers";
 
@@ -114,33 +115,43 @@ export default function CenterModal({ center, onClose }: CenterModalProps) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-white/10 px-6 py-4 sm:flex-row">
-          <a
-            href={naverPlaceUrl(center.naverPlaceId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 rounded-lg py-3 text-center text-sm font-semibold text-black transition-opacity hover:opacity-90"
-            style={{ backgroundColor: center.colors.primary }}
-          >
-            네이버 플레이스
-          </a>
-          {center.instagram && (
+        <div className="space-y-2 border-t border-white/10 px-6 py-4">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <a
-              href={center.instagram}
+              href={naverPlaceUrl(center.naverPlaceId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 rounded-lg py-3 text-center text-sm font-semibold text-black transition-opacity hover:opacity-90"
+              style={{ backgroundColor: center.colors.primary }}
+            >
+              네이버 플레이스
+            </a>
+            {center.instagram && (
+              <a
+                href={center.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 rounded-lg border border-white/20 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-white/5"
+              >
+                Instagram
+              </a>
+            )}
+            <a
+              href={naverDirectionsUrl(center.naverPlaceId)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 rounded-lg border border-white/20 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-white/5"
             >
-              Instagram
+              길찾기
             </a>
-          )}
+          </div>
           <a
-            href={naverDirectionsUrl(center.naverPlaceId)}
+            href={naverReservationUrl(center.naverPlaceId)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 rounded-lg border border-white/20 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-white/5"
+            className="block w-full rounded-lg bg-[#39FF14] py-3 text-center text-sm font-semibold text-black transition-opacity hover:opacity-90"
           >
-            길찾기
+            회원권 및 PT 상담 예약
           </a>
         </div>
       </div>
