@@ -1,26 +1,28 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { centers, type Center } from "@/data/centers";
+import {
+  BRANCH_MAP_COORDS,
+  SEOUL_DISTRICT_RINGS,
+  SEOUL_VIEWBOX,
+} from "@/data/seoul-boundary";
 import CenterModal from "./CenterModal";
 
-function seoulSilhouettePath(): string {
-  return [
-    "M 48 88 L 52 72 L 58 58 L 68 42 L 82 28 L 98 18 L 118 12",
-    "L 142 8 L 168 10 L 192 16 L 212 26 L 228 38 L 240 52",
-    "L 248 68 L 252 82 L 254 98 L 252 112 L 246 128 L 238 142",
-    "L 228 158 L 218 172 L 208 188 L 198 202 L 188 218 L 178 232",
-    "L 168 248 L 158 262 L 148 278 L 138 292 L 128 306 L 118 318",
-    "L 108 328 L 98 336 L 88 342 L 78 346 L 68 348 L 58 346",
-    "L 50 340 L 44 330 L 40 318 L 38 304 L 36 288 L 34 272",
-    "L 32 256 L 30 240 L 28 224 L 26 208 L 24 192 L 22 176",
-    "L 20 160 L 18 144 L 16 128 L 14 112 L 12 96 L 14 82",
-    "L 18 68 L 24 56 L 32 46 L 40 38 Z",
-  ].join(" ");
-}
+const NEON = "#39FF14";
 
-function hanRiverPath(): string {
-  return "M 20 155 Q 80 175 140 168 Q 200 160 250 175 Q 230 195 170 190 Q 110 185 50 200 Z";
+function ringsToPath(rings: { x: number; y: number }[][]): string {
+  return rings
+    .map((ring) => {
+      if (ring.length === 0) return "";
+      const [first, ...rest] = ring;
+      return (
+        `M ${first.x.toFixed(2)} ${first.y.toFixed(2)}` +
+        rest.map((p) => ` L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join("") +
+        " Z"
+      );
+    })
+    .join(" ");
 }
 
 interface SeoulMapProps {
@@ -34,8 +36,14 @@ export default function SeoulMap({
   selectedId: controlledSelectedId,
   className = "",
 }: SeoulMapProps) {
+  const uid = useId().replace(/:/g, "");
   const [internalSelected, setInternalSelected] = useState<Center | null>(null);
   const selectedId = controlledSelectedId ?? internalSelected?.id ?? null;
+
+  const seoulClipPath = useMemo(
+    () => ringsToPath(SEOUL_DISTRICT_RINGS.flat()),
+    [],
+  );
 
   const handleSelect = useCallback(
     (center: Center) => {
@@ -47,47 +55,83 @@ export default function SeoulMap({
 
   const closeModal = () => setInternalSelected(null);
 
+  const dotPatternId = `seoul-dots-${uid}`;
+  const seoulClipId = `seoul-clip-${uid}`;
+
   return (
     <>
       <div className={`relative ${className}`}>
         <svg
-          viewBox="0 0 260 360"
-          className="mx-auto h-auto w-full max-w-md"
+          viewBox={`0 0 ${SEOUL_VIEWBOX.width} ${SEOUL_VIEWBOX.height}`}
+          className="mx-auto h-auto w-full max-w-lg"
           role="img"
           aria-label="서울 지도 — 짐라이트 6개 지점"
         >
           <defs>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2" result="blur" />
+            <pattern
+              id={dotPatternId}
+              width="7"
+              height="7"
+              patternUnits="userSpaceOnUse"
+            >
+              <circle cx="3.5" cy="3.5" r="1.15" fill="white" opacity="0.55" />
+            </pattern>
+
+            <clipPath id={seoulClipId}>
+              <path d={seoulClipPath} />
+            </clipPath>
+
+            <filter id={`glow-${uid}`}>
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            <linearGradient id="mapFill" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.06" />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.02" />
-            </linearGradient>
           </defs>
 
-          <path
-            d={seoulSilhouettePath()}
-            fill="url(#mapFill)"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="1.5"
-            strokeDasharray="4 3"
-          />
-          <path
-            d={hanRiverPath()}
-            fill="rgba(57,255,20,0.04)"
-            stroke="rgba(57,255,20,0.12)"
-            strokeWidth="0.5"
+          {/* 도트 매트릭스 — 서울 25개 구 윤곽 클립 */}
+          <rect
+            x="0"
+            y="0"
+            width={SEOUL_VIEWBOX.width}
+            height={SEOUL_VIEWBOX.height}
+            fill={`url(#${dotPatternId})`}
+            clipPath={`url(#${seoulClipId})`}
           />
 
+          {/* 한강 (포스터 스타일 그린 밴드) */}
+          <path
+            d="M 28 248 C 120 268, 200 242, 392 258 C 360 278, 240 272, 28 288 Z"
+            fill={NEON}
+            opacity="0.07"
+            clipPath={`url(#${seoulClipId})`}
+          />
+          <path
+            d="M 28 248 C 120 268, 200 242, 392 258"
+            fill="none"
+            stroke={NEON}
+            strokeWidth="0.6"
+            opacity="0.12"
+            clipPath={`url(#${seoulClipId})`}
+          />
+
+          {/* 구 경계 실루엣 (은은한 외곽선) */}
+          <path
+            d={seoulClipPath}
+            fill="none"
+            stroke="white"
+            strokeWidth="0.6"
+            opacity="0.12"
+          />
+
+          {/* 지점 마커 */}
           {centers.map((center) => {
-            const x = (center.mapPosition.x / 100) * 260;
-            const y = (center.mapPosition.y / 100) * 360;
+            const pos = BRANCH_MAP_COORDS[center.id];
+            if (!pos) return null;
             const isActive = selectedId === center.id;
+            const label = center.number.replace("점", "");
+            const size = isActive ? 11 : 9;
 
             return (
               <g
@@ -102,42 +146,40 @@ export default function SeoulMap({
                 aria-label={`${center.number} ${center.name}`}
               >
                 {isActive && (
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r="14"
-                    fill={center.colors.primary}
-                    opacity="0.25"
+                  <rect
+                    x={pos.x - 14}
+                    y={pos.y - 14}
+                    width="28"
+                    height="28"
+                    fill={NEON}
+                    opacity="0.15"
                     className="animate-pulse"
                   />
                 )}
-                <rect
-                  x={x - 5}
-                  y={y - 5}
-                  width="10"
-                  height="10"
-                  fill={isActive ? center.colors.primary : "#39FF14"}
-                  stroke={center.colors.secondary}
-                  strokeWidth="1"
-                  filter={isActive ? "url(#glow)" : undefined}
-                  className="transition-all duration-200 hover:scale-125"
-                  style={{ transformOrigin: `${x}px ${y}px` }}
-                />
                 <text
-                  x={x}
-                  y={y - 10}
+                  x={pos.x}
+                  y={pos.y - size - 4}
                   textAnchor="middle"
-                  className="fill-white/60 text-[7px] font-medium"
+                  className="fill-white/70 text-[9px] font-medium"
                   style={{ fontFamily: "system-ui, sans-serif" }}
                 >
-                  {center.number.replace("점", "")}
+                  {label}
                 </text>
+                <rect
+                  x={pos.x - size / 2}
+                  y={pos.y - size / 2}
+                  width={size}
+                  height={size}
+                  fill={isActive ? center.colors.primary : NEON}
+                  filter={isActive ? `url(#glow-${uid})` : undefined}
+                  className="transition-all duration-200"
+                />
               </g>
             );
           })}
         </svg>
 
-        <p className="mt-4 text-center text-xs tracking-widest text-white/40 uppercase">
+        <p className="mt-4 text-center text-xs tracking-[0.2em] text-white/40 uppercase">
           Base in Seoul · 6 Locations
         </p>
       </div>

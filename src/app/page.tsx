@@ -2,13 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import CenterCardGrid from "@/components/CenterCardGrid";
 import EventBoard from "@/components/EventBoard";
-import MainBannerCarousel from "@/components/MainBannerCarousel";
+import ReelPopup from "@/components/ReelPopup";
 import SeoulMap from "@/components/SeoulMap";
 
 export default function HomePage() {
   return (
     <>
-      <MainBannerCarousel />
+      <ReelPopup />
 
       <section className="relative overflow-hidden px-4 pb-20 pt-12 sm:px-6">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(57,255,20,0.08),transparent_60%)]" />
