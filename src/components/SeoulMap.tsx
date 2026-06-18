@@ -1,17 +1,32 @@
 "use client";
 
-import { useCallback, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { centers, type Center } from "@/data/centers";
 import {
   BRANCH_LABEL_OFFSET,
   BRANCH_MAP_COORDS,
   BRANCH_MAP_LABELS,
   MAP_DISPLAY_VIEWBOX,
+  MAP_MOBILE_DISPLAY_VIEWBOX,
   SEOUL_DISTRICT_RINGS,
 } from "@/data/seoul-boundary";
 import CenterModal from "./CenterModal";
 
 const NEON = "#39FF14";
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const update = () => setMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  return mobile;
+}
 
 function ringsToPath(rings: { x: number; y: number }[][]): string {
   return rings
@@ -39,6 +54,7 @@ export default function SeoulMap({
   className = "",
 }: SeoulMapProps) {
   const uid = useId().replace(/:/g, "");
+  const isMobile = useIsMobile();
   const [internalSelected, setInternalSelected] = useState<Center | null>(null);
   const selectedId = controlledSelectedId ?? internalSelected?.id ?? null;
 
@@ -63,12 +79,12 @@ export default function SeoulMap({
   const riverGradId = `river-grad-${uid}`;
   const frameGradId = `frame-grad-${uid}`;
 
-  const vb = MAP_DISPLAY_VIEWBOX;
+  const vb = isMobile ? MAP_MOBILE_DISPLAY_VIEWBOX : MAP_DISPLAY_VIEWBOX;
 
   return (
     <>
       <div className={`relative ${className}`}>
-        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-4 sm:p-6">
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-2 sm:p-6">
           <div
             className="pointer-events-none absolute inset-0 opacity-40"
             style={{
@@ -83,7 +99,7 @@ export default function SeoulMap({
 
           <svg
             viewBox={`${vb.x} ${vb.y} ${vb.width} ${vb.height}`}
-            className="relative mx-auto h-auto w-full"
+            className="relative mx-auto h-auto w-full touch-manipulation"
             role="img"
             aria-label="서울 지도 — 짐라이트 6개 지점"
             preserveAspectRatio="xMidYMid meet"
@@ -194,18 +210,31 @@ export default function SeoulMap({
               if (!pos) return null;
               const isActive = selectedId === center.id;
               const label = BRANCH_MAP_LABELS[center.id] ?? center.name;
-              const size = isActive ? 10 : 8;
+              const size = isMobile
+                ? isActive
+                  ? 16
+                  : 13
+                : isActive
+                  ? 10
+                  : 8;
+              const hitRadius = isMobile ? 26 : 18;
               const labelCfg = BRANCH_LABEL_OFFSET[center.id] ?? {
                 side: "right" as const,
                 gap: 7,
               };
-              const gap = labelCfg.gap ?? 7;
+              const gap = (labelCfg.gap ?? 7) + (isMobile ? 2 : 0);
               const labelOnLeft = labelCfg.side === "left";
               const labelX = labelOnLeft
                 ? pos.x - size / 2 - gap
                 : pos.x + size / 2 + gap;
-              const labelY = pos.y + 3;
-              const fontSize = label.length > 8 ? 6.5 : 7.5;
+              const labelY = pos.y + (isMobile ? 4 : 3);
+              const fontSize = isMobile
+                ? label.length > 8
+                  ? 8.5
+                  : 9.5
+                : label.length > 8
+                  ? 6.5
+                  : 7.5;
 
               return (
                 <g
@@ -219,12 +248,19 @@ export default function SeoulMap({
                   tabIndex={0}
                   aria-label={label}
                 >
+                  <circle
+                    cx={pos.x}
+                    cy={pos.y}
+                    r={hitRadius}
+                    fill="transparent"
+                  />
+
                   {isActive && (
                     <>
                       <circle
                         cx={pos.x}
                         cy={pos.y}
-                        r="16"
+                        r={isMobile ? 22 : 16}
                         fill={center.colors.primary}
                         opacity="0.12"
                         className="animate-pulse"
@@ -232,7 +268,7 @@ export default function SeoulMap({
                       <circle
                         cx={pos.x}
                         cy={pos.y}
-                        r="22"
+                        r={isMobile ? 28 : 22}
                         fill="none"
                         stroke={NEON}
                         strokeWidth="0.6"

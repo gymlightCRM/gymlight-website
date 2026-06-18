@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   naverDirectionsUrl,
-  naverPlaceUrl,
   naverReservationUrl,
   type Center,
 } from "@/data/centers";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import NavigationPicker from "./NavigationPicker";
 
 interface CenterModalProps {
   center: Center;
@@ -14,9 +15,16 @@ interface CenterModalProps {
 }
 
 export default function CenterModal({ center, onClose }: CenterModalProps) {
+  const isMobile = useIsMobile();
+  const [showNavPicker, setShowNavPicker] = useState(false);
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (showNavPicker) {
+        setShowNavPicker(false);
+        return;
+      }
+      onClose();
     };
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKey);
@@ -24,10 +32,11 @@ export default function CenterModal({ center, onClose }: CenterModalProps) {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKey);
     };
-  }, [onClose]);
+  }, [onClose, showNavPicker]);
 
   return (
-    <div
+    <>
+      <div
       className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
       onClick={onClose}
       role="dialog"
@@ -117,15 +126,6 @@ export default function CenterModal({ center, onClose }: CenterModalProps) {
 
         <div className="space-y-2 border-t border-white/10 px-6 py-4">
           <div className="flex flex-col gap-2 sm:flex-row">
-            <a
-              href={naverPlaceUrl(center.naverPlaceId)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 rounded-lg py-3 text-center text-sm font-semibold text-black transition-opacity hover:opacity-90"
-              style={{ backgroundColor: center.colors.primary }}
-            >
-              네이버 플레이스
-            </a>
             {center.instagram && (
               <a
                 href={center.instagram}
@@ -136,14 +136,23 @@ export default function CenterModal({ center, onClose }: CenterModalProps) {
                 Instagram
               </a>
             )}
-            <a
-              href={naverDirectionsUrl(center.naverPlaceId)}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => {
+                if (isMobile) {
+                  setShowNavPicker(true);
+                  return;
+                }
+                window.open(
+                  naverDirectionsUrl(center.naverPlaceId),
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }}
               className="flex-1 rounded-lg border border-white/20 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-white/5"
             >
               길찾기
-            </a>
+            </button>
           </div>
           <a
             href={naverReservationUrl(center.naverPlaceId)}
@@ -155,7 +164,15 @@ export default function CenterModal({ center, onClose }: CenterModalProps) {
           </a>
         </div>
       </div>
-    </div>
+      </div>
+
+      {showNavPicker && (
+        <NavigationPicker
+          center={center}
+          onClose={() => setShowNavPicker(false)}
+        />
+      )}
+    </>
   );
 }
 

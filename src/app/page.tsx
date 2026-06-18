@@ -64,7 +64,7 @@ export default function HomePage() {
               서울 지도에서 지점을 선택하세요
             </p>
           </div>
-          <SeoulMap className="mx-auto w-full max-w-3xl" />
+          <SeoulMap className="mx-auto w-full max-w-full sm:max-w-3xl" />
         </div>
       </section>
 

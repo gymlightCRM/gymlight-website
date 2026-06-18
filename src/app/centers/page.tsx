@@ -20,7 +20,7 @@ export default function CentersPage() {
           </p>
         </div>
 
-        <SeoulMap className="mx-auto mb-16 w-full max-w-3xl" />
+        <SeoulMap className="mx-auto mb-16 w-full max-w-full sm:max-w-3xl" />
         <CenterCardGrid />
       </div>
     </div>
