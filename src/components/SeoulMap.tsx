@@ -5,6 +5,7 @@ import { centers, type Center } from "@/data/centers";
 import {
   BRANCH_LABEL_OFFSET,
   BRANCH_MAP_COORDS,
+  BRANCH_MAP_LABELS,
   MAP_DISPLAY_VIEWBOX,
   SEOUL_DISTRICT_RINGS,
 } from "@/data/seoul-boundary";
@@ -192,15 +193,19 @@ export default function SeoulMap({
               const pos = BRANCH_MAP_COORDS[center.id];
               if (!pos) return null;
               const isActive = selectedId === center.id;
-              const label = center.number.replace("점", "");
+              const label = BRANCH_MAP_LABELS[center.id] ?? center.name;
               const size = isActive ? 10 : 8;
               const labelCfg = BRANCH_LABEL_OFFSET[center.id] ?? {
-                dx: 0,
-                dy: -12,
-                anchor: "middle" as const,
+                side: "right" as const,
+                gap: 7,
               };
-              const labelX = pos.x + labelCfg.dx;
-              const labelY = pos.y + labelCfg.dy;
+              const gap = labelCfg.gap ?? 7;
+              const labelOnLeft = labelCfg.side === "left";
+              const labelX = labelOnLeft
+                ? pos.x - size / 2 - gap
+                : pos.x + size / 2 + gap;
+              const labelY = pos.y + 3;
+              const fontSize = label.length > 8 ? 6.5 : 7.5;
 
               return (
                 <g
@@ -212,7 +217,7 @@ export default function SeoulMap({
                   }}
                   role="button"
                   tabIndex={0}
-                  aria-label={`${center.number} ${center.name}`}
+                  aria-label={label}
                 >
                   {isActive && (
                     <>
@@ -239,10 +244,13 @@ export default function SeoulMap({
                   <text
                     x={labelX}
                     y={labelY}
-                    textAnchor={labelCfg.anchor}
-                    className="text-[8.5px] font-semibold tracking-wide"
-                    fill={isActive ? center.colors.primary : "rgba(255,255,255,0.75)"}
-                    style={{ fontFamily: "system-ui, sans-serif" }}
+                    textAnchor={labelOnLeft ? "end" : "start"}
+                    fill={isActive ? center.colors.primary : "rgba(255,255,255,0.85)"}
+                    style={{
+                      fontFamily: "system-ui, sans-serif",
+                      fontSize: `${fontSize}px`,
+                      fontWeight: 600,
+                    }}
                   >
                     {label}
                   </text>

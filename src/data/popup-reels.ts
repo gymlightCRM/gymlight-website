@@ -15,6 +15,8 @@ export interface PopupReel {
   type: PopupReelType;
   url: string;
   title?: string;
+  /** 직접 mp4 URL (있으면 embed 대신 자동재생) */
+  videoUrl?: string;
   /** 표시할 인스타 계정 (예: gymlight.kr) */
   handle?: string;
   durationSec?: number;
@@ -26,6 +28,7 @@ export const popupReels: PopupReel[] = [
     id: "reel-1",
     type: "instagram",
     url: "https://www.instagram.com/reel/DZuIN-8B3QB/",
+    videoUrl: "/reels/reel-1.mp4",
     durationSec: 30,
     link: "https://www.instagram.com/gymlight.kr/",
   },
@@ -33,6 +36,7 @@ export const popupReels: PopupReel[] = [
     id: "reel-2",
     type: "instagram",
     url: "https://www.instagram.com/reel/DYjVGovOs2T/",
+    videoUrl: "/reels/reel-2.mp4",
     durationSec: 30,
     link: "https://www.instagram.com/gymlight.kr/",
   },
@@ -40,6 +44,7 @@ export const popupReels: PopupReel[] = [
     id: "reel-3",
     type: "instagram",
     url: "https://www.instagram.com/reel/DZrfghFtYHR/",
+    videoUrl: "/reels/reel-3.mp4",
     durationSec: 30,
     link: "https://www.instagram.com/gymlight.kr/",
   },
@@ -47,6 +52,7 @@ export const popupReels: PopupReel[] = [
     id: "reel-4",
     type: "instagram",
     url: "https://www.instagram.com/reel/DY2Jk-bBKXu/",
+    videoUrl: "/reels/reel-4.mp4",
     durationSec: 30,
     link: "https://www.instagram.com/gymlight.kr/",
   },

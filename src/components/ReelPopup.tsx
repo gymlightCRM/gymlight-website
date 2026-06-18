@@ -98,23 +98,30 @@ export default function ReelPopup() {
     clearTimer();
     if (!open || !current || reels.length <= 1 || paused) return;
 
+    if (current.type === "instagram") {
+      return clearTimer;
+    }
+
     if (current.type === "video") {
       timerRef.current = setTimeout(goNext, (current.durationSec ?? 120) * 1000);
       return clearTimer;
     }
 
-    const sec =
-      current.durationSec ?? (current.type === "instagram" ? 30 : 8);
-    timerRef.current = setTimeout(goNext, sec * 1000);
+    timerRef.current = setTimeout(goNext, (current.durationSec ?? 8) * 1000);
     return clearTimer;
   }, [open, index, current, goNext, paused, reels.length]);
 
   useEffect(() => {
-    if (open && current?.type === "video" && videoRef.current) {
-      videoRef.current.currentTime = 0;
-      void videoRef.current.play().catch(() => undefined);
+    const isVideoLike =
+      current?.type === "video" || current?.type === "instagram";
+    if (!open || !isVideoLike || !videoRef.current) return;
+    const el = videoRef.current;
+    if (paused) {
+      el.pause();
+    } else {
+      void el.play().catch(() => undefined);
     }
-  }, [open, index, current?.type, current?.url]);
+  }, [open, index, current?.type, current?.url, current?.videoUrl, paused]);
 
   if (reels.length === 0 || !open || !current) return null;
 
@@ -157,6 +164,8 @@ export default function ReelPopup() {
               reel={current}
               videoRef={videoRef}
               onVideoEnded={goNext}
+              active={!animating}
+              paused={paused}
             />
 
             {reels.length > 1 && (
@@ -301,42 +310,27 @@ function ReelContent({
   reel,
   videoRef,
   onVideoEnded,
+  active,
+  paused,
 }: {
   reel: PopupReel;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   onVideoEnded: () => void;
+  active: boolean;
+  paused: boolean;
 }) {
   const href = reel.link ?? reel.url;
 
   if (reel.type === "instagram") {
-    const embed = instagramEmbedUrl(reel.url, { autoplay: true });
-    if (!embed) {
-      return (
-        <div className="flex aspect-[9/16] items-center justify-center bg-neutral-100">
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-lg bg-[#0095f6] px-5 py-2.5 text-sm font-semibold text-white"
-          >
-            Instagram에서 보기
-          </a>
-        </div>
-      );
-    }
-
     return (
-      <div className="relative aspect-[9/16] w-full overflow-hidden bg-neutral-950">
-        <iframe
-          src={embed}
-          title={reel.title ?? "짐라이트 Instagram Reel"}
-          className="absolute left-0 w-full border-0"
-          style={{ height: "118%", top: "-9%" }}
-          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-          allowFullScreen
-          loading="eager"
-        />
-      </div>
+      <InstagramReelPlayer
+        reel={reel}
+        videoRef={videoRef}
+        onVideoEnded={onVideoEnded}
+        active={active}
+        paused={paused}
+        fallbackHref={href}
+      />
     );
   }
 
@@ -372,6 +366,148 @@ function ReelContent({
         priority
       />
     </Link>
+  );
+}
+
+function InstagramReelPlayer({
+  reel,
+  videoRef,
+  onVideoEnded,
+  active,
+  paused,
+  fallbackHref,
+}: {
+  reel: PopupReel;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  onVideoEnded: () => void;
+  active: boolean;
+  paused: boolean;
+  fallbackHref: string;
+}) {
+  const [videoSrc, setVideoSrc] = useState<string | null>(reel.videoUrl ?? null);
+  const [loading, setLoading] = useState(!reel.videoUrl);
+  const [muted, setMuted] = useState(true);
+
+  useEffect(() => {
+    if (reel.videoUrl) {
+      setVideoSrc(reel.videoUrl);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/instagram-reel?url=${encodeURIComponent(reel.url)}`,
+        );
+        if (!res.ok) throw new Error("resolve failed");
+        const data = (await res.json()) as { videoUrl?: string };
+        if (!cancelled && data.videoUrl) {
+          setVideoSrc(data.videoUrl);
+        }
+      } catch {
+        if (!cancelled) setVideoSrc(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reel.url, reel.videoUrl]);
+
+  useEffect(() => {
+    if (!active || !videoSrc || !videoRef.current) return;
+    const el = videoRef.current;
+    el.muted = muted;
+    if (paused) {
+      el.pause();
+    } else {
+      void el.play().catch(() => undefined);
+    }
+  }, [active, videoSrc, muted, paused, videoRef]);
+
+  useEffect(() => {
+    if (!videoSrc || !videoRef.current) return;
+    videoRef.current.currentTime = 0;
+  }, [videoSrc, reel.url, videoRef]);
+
+  useEffect(() => {
+    if (videoSrc || loading) return;
+    const embed = instagramEmbedUrl(reel.url, { autoplay: true });
+    if (!embed) return;
+    const t = window.setTimeout(
+      onVideoEnded,
+      (reel.durationSec ?? 30) * 1000,
+    );
+    return () => window.clearTimeout(t);
+  }, [videoSrc, loading, reel.url, reel.durationSec, onVideoEnded]);
+
+  if (loading) {
+    return (
+      <div className="flex aspect-[9/16] items-center justify-center bg-neutral-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-[#39FF14]" />
+      </div>
+    );
+  }
+
+  if (videoSrc) {
+    return (
+      <div className="relative aspect-[9/16] w-full overflow-hidden bg-black">
+        <video
+          ref={videoRef}
+          src={videoSrc}
+          className="absolute inset-0 h-full w-full object-cover"
+          playsInline
+          muted={muted}
+          autoPlay
+          preload="auto"
+          onEnded={onVideoEnded}
+        />
+        <button
+          type="button"
+          onClick={() => setMuted((m) => !m)}
+          className="absolute right-3 bottom-3 z-10 rounded-full bg-black/55 px-2.5 py-1.5 text-[11px] text-white backdrop-blur-sm"
+          aria-label={muted ? "소리 켜기" : "소리 끄기"}
+        >
+          {muted ? "🔇" : "🔊"}
+        </button>
+      </div>
+    );
+  }
+
+  const embed = instagramEmbedUrl(reel.url, { autoplay: true });
+  if (!embed) {
+    return (
+      <div className="flex aspect-[9/16] items-center justify-center bg-neutral-100">
+        <a
+          href={fallbackHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-lg bg-[#0095f6] px-5 py-2.5 text-sm font-semibold text-white"
+        >
+          Instagram에서 보기
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative aspect-[9/16] w-full overflow-hidden bg-neutral-950">
+      <iframe
+        src={embed}
+        title={reel.title ?? "짐라이트 Instagram Reel"}
+        className="absolute left-0 w-full border-0"
+        style={{ height: "118%", top: "-9%" }}
+        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+        allowFullScreen
+        loading="eager"
+      />
+    </div>
   );
 }
 
