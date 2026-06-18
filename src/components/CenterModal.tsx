@@ -114,7 +114,7 @@ export default function CenterModal({ center, onClose }: CenterModalProps) {
           </div>
         </div>
 
-        <div className="flex gap-3 border-t border-white/10 px-6 py-4">
+        <div className="flex flex-col gap-2 border-t border-white/10 px-6 py-4 sm:flex-row">
           <a
             href={naverPlaceUrl(center.naverPlaceId)}
             target="_blank"
@@ -124,6 +124,16 @@ export default function CenterModal({ center, onClose }: CenterModalProps) {
           >
             네이버 플레이스
           </a>
+          {center.instagram && (
+            <a
+              href={center.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 rounded-lg border border-white/20 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-white/5"
+            >
+              Instagram
+            </a>
+          )}
           <a
             href={naverDirectionsUrl(center.naverPlaceId)}
             target="_blank"

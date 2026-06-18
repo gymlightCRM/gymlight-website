@@ -42,6 +42,7 @@ export const centers: Center[] = [
     colors: { primary: "#FFD700", secondary: "#1A1A1A" },
     mapPosition: { x: 38, y: 58 },
     naverPlaceId: "1878989166",
+    instagram: "https://www.instagram.com/gymlight_seogang/",
   },
   {
     id: "myongji",
@@ -61,6 +62,7 @@ export const centers: Center[] = [
     colors: { primary: "#DC2626", secondary: "#6B7280" },
     mapPosition: { x: 28, y: 42 },
     naverPlaceId: "1869627026",
+    instagram: "https://www.instagram.com/gymlight_myongji/",
   },
   {
     id: "yeonhui-1",
@@ -81,6 +83,7 @@ export const centers: Center[] = [
     colors: { primary: "#C0C0C0", secondary: "#6B7280" },
     mapPosition: { x: 32, y: 48 },
     naverPlaceId: "1379076721",
+    instagram: "https://www.instagram.com/gymlight_yeonhui/",
   },
   {
     id: "yeonhui-2",
@@ -101,6 +104,7 @@ export const centers: Center[] = [
     colors: { primary: "#F97316", secondary: "#6B7280" },
     mapPosition: { x: 36, y: 52 },
     naverPlaceId: "2000525419",
+    instagram: "https://www.instagram.com/gymlight_yeonhui/",
   },
   {
     id: "gusan",
@@ -140,6 +144,7 @@ export const centers: Center[] = [
     colors: { primary: "#16A34A", secondary: "#6B7280" },
     mapPosition: { x: 18, y: 72 },
     naverPlaceId: "1843376814",
+    instagram: "https://www.instagram.com/gymlight_gocheok/",
   },
 ];
 
